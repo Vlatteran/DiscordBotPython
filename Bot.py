@@ -18,8 +18,8 @@ class Bot:
         print(f'We have logged in as {self.bot.user}')
 
     async def play(self, music, message):
-        YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
-        FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+        ydl_options = {'format': 'bestaudio', 'noplaylist': 'True'}
+        ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
                           'options': '-vn'}
         if self.voice_client is None:
             channel = message.author.voice.channel
@@ -33,16 +33,16 @@ class Bot:
         elif self.voice_client.is_playing():
             await message.reply('already playing something')
             return
-        with YoutubeDL(YDL_OPTIONS) as ydl:
+        with YoutubeDL(ydl_options) as ydl:
             try:
                 info = ydl.extract_info(f"ytsearch:{music}", download=False)['entries'][0]
             except:
                 info = ydl.extract_info(music, download=False)
 
-        URL = info['formats'][0]['url']
-        print(URL)
+        url = info['formats'][0]['url']
+        print(url)
 
-        self.voice_client.play(discord.FFmpegPCMAudio(source=URL, **FFMPEG_OPTIONS))
+        self.voice_client.play(discord.FFmpegPCMAudio(source=url, **ffmpeg_options))
 
         while self.voice_client.is_playing():
             await sleep(3)
