@@ -11,12 +11,12 @@ class MyBot(Client):
         self.player = Player()
 
     async def on_ready(self):
-        print(f'We have logged in as {self.user}')
+        print(f'[MyBot.on_ready]We have logged in as {self.user}')
 
     async def on_message(self, message: discord.Message):
         if message.author == self.user:
             return
-        print(f'{message.author} in {message.guild}.{message.channel}: {message.content}')
+        print(f'[MyBot.on_message]{message.author} in {message.guild}.{message.channel}: {message.content}')
 
         command = message.content.split(' ')[0]
         command_text = ' '.join(message.content.split(' ')[1:])
@@ -55,7 +55,7 @@ class MyBot(Client):
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
         if user == self.user:
             return
-        print(f'{user} added reaction {reaction} to the {reaction.message.content} in'
+        print(f'[MyBot.on_reaction_add()]{user} added reaction {reaction} to the {reaction.message.content} in'
               f' {reaction.message.guild}.{reaction.message.channel}')
         if reaction.message == self.player.player_message:
             if reaction.emoji == '⏪':
