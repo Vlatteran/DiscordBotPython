@@ -4,7 +4,9 @@ from asyncio import sleep
 
 
 def search(query):
-    ydl_options = {'format': 'bestaudio', 'noplaylist': 'True'}
+    ydl_options = {'format': 'bestaudio',
+                   'noplaylist': 'True',
+                   'quiet': True}
     with YoutubeDL(ydl_options) as ydl:
         try:
             info = ydl.extract_info(f"ytsearch:{query}", download=False)['entries'][0]
@@ -36,19 +38,26 @@ class Player:
 
     async def play(self, message):
         while self.current <= len(self.music_list) - 1:
-            print(f'(start)current={self.current}')
-            music = self.music_list[self.current]
+            info = self.music_list[self.current]
             ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
                               'options': '-vn'}
 
-            info = search(music)
             url = info['formats'][0]['url']
+
             if self.player_message is None:
                 self.player_message = await message.reply(f'Now playing: {info["title"]}')
-                await self.player_message.pin()
+                try:
+                    await self.player_message.pin()
+                except discord.errors.Forbidden:
+                    print("can't pin")
             else:
-                await self.player_message.edit(content=f'Now playing: {info["title"]}')
-                await self.player_message.clear_reactions()
+                try:
+                    await self.player_message.clear_reactions()
+                except discord.errors.Forbidden:
+                    print("can't clear reactions")
+                    self.player_message = await message.reply(f'Now playing: {info["title"]}')
+                else:
+                    await self.player_message.edit(content=f'Now playing: {info["title"]}')
             await self.player_message.add_reaction('⏪')
             await self.player_message.add_reaction('⏸')
             await self.player_message.add_reaction('⏩')
@@ -56,32 +65,32 @@ class Player:
 
             while self.voice_client.is_playing():
                 if self.is_next:
-                    print('next')
+                    print('[Player.play] change to next track')
                     self.voice_client.stop()
                     self.is_next = False
                     self.current += 1
                     break
                 elif self.is_previous:
                     self.voice_client.stop()
-                    print('previous')
-                    self.is_next = False
+                    self.is_paused = False
                     self.current -= 1
                     break
                 elif self.is_paused:
-                    print('pause')
                     self.voice_client.pause()
                 elif not self.voice_client.is_paused():
                     await sleep(3)
                 else:
                     self.current += 1
                     break
-
-            print(f'(end)current={self.current}')
         await self.voice_client.disconnect()
-        await self.player_message.unpin()
+        try:
+            await self.player_message.unpin()
+        except discord.errors.Forbidden:
+            print("can't unpin")
         await self.player_message.delete()
         self.voice_client = None
 
     async def add_to_queue(self, music, message):
-        self.music_list.append(music)
-        await message.reply(f'{music} is {len(self.music_list)} in queue')
+        info = search(music)
+        self.music_list.append(info)
+        await message.reply(f'{info["title"]} is {len(self.music_list) - self.current} in queue')

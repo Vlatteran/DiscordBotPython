@@ -2,7 +2,7 @@ from discord import Client
 import discord
 from config import settings
 from Player import Player
-from asyncio import sleep
+import discord.guild
 
 
 class MyBot(Client):
@@ -14,9 +14,9 @@ class MyBot(Client):
         print(f'We have logged in as {self.user}')
 
     async def on_message(self, message: discord.Message):
-        print(f'{message.author} in {message.guild}.{message.channel}: {message.content}')
         if message.author == self.user:
             return
+        print(f'{message.author} in {message.guild}.{message.channel}: {message.content}')
 
         command = message.content.split(' ')[0]
         command_text = ' '.join(message.content.split(' ')[1:])
@@ -44,13 +44,20 @@ class MyBot(Client):
             await self.player.add_to_queue(command_text, message)
         elif command == '!play':
             await self.player.play(message)
+        elif command == '!showlist':
+            amount = len(self.player.music_list) - self.player.current
+            amount = 10 if amount > 10 else amount
+            print(f'{self.player.current}, {amount}')
+            text = f'First {amount} tracks in list:\n'
+            text += '\n'.join([str(num + 1) + ". " + info['title'] for info, num in
+                               zip(self.player.music_list[self.player.current:amount], range(amount))])
+            await message.reply(text)
 
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
-        print(user)
-        print(reaction)
-        print(user == self.user)
         if user == self.user:
             return
+        print(f'{user} added reaction {reaction} to the {reaction.message.content} in'
+              f' {reaction.message.guild}.{reaction.message.channel}')
         if reaction.message == self.player.player_message:
             if reaction.emoji == '⏪':
                 print('previous')
