@@ -1,66 +1,17 @@
-from discord.ext.commands import Bot
+from discord import Client
 import discord
 from config import settings
-from collections import deque
-from youtube_dl import YoutubeDL
+from Player import Player
 from asyncio import sleep
 
 
-class MyBot(Bot):
-    def __init__(self, command_prefix, **options):
-        super().__init__(command_prefix, **options)
-        self.voice_client = None
-        self.music_queue = deque()
+class MyBot(Client):
+    def __init__(self, **options):
+        super().__init__(**options)
+        self.player = Player()
 
     async def on_ready(self):
         print(f'We have logged in as {self.user}')
-
-    async def play(self, music, message):
-        ydl_options = {'format': 'bestaudio', 'noplaylist': 'True'}
-        ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-                          'options': '-vn'}
-        if self.voice_client is None:
-            channel = message.author.voice
-            if channel is not None:
-                self.voice_client = await channel.channel.connect(timeout=60, reconnect=True)
-            else:
-                await message.reply('You must be connected to voice channel to play music')
-        elif self.voice_client.channel != message.author.voice.channel:
-            await message.reply('already connected to other channel')
-            return
-        elif self.voice_client.is_playing():
-            await message.reply('already playing something')
-            return
-        with YoutubeDL(ydl_options) as ydl:
-            try:
-                info = ydl.extract_info(f"ytsearch:{music}", download=False)['entries'][0]
-            except:
-                info = ydl.extract_info(music, download=False)
-
-        url = info['formats'][0]['url']
-        print(url)
-
-        self.voice_client.play(discord.FFmpegPCMAudio(source=url, **ffmpeg_options))
-
-        while self.voice_client.is_playing():
-            await sleep(3)
-        if not self.voice_client.is_paused():
-            try:
-                params = self.music_queue.popleft()
-                await self.play(params['music'], params['message'])
-            except IndexError:
-                await self.voice_client.disconnect()
-            self.voice_client = None
-
-    async def add_to_queue(self, music, message):
-        try:
-            if self.voice_client.is_playing():
-                self.music_queue.append({'music': music, 'message': message})
-            else:
-                await message.reply("Nothing is playing, use command !play")
-        except Exception as e:
-            print(e)
-            await message.reply("Nothing is playing, use command !play")
 
     async def on_message(self, message: discord.Message):
         print(f'{message.author} in {message.guild}.{message.channel}: {message.content}')
@@ -69,27 +20,49 @@ class MyBot(Bot):
 
         command = message.content.split(' ')[0]
         command_text = ' '.join(message.content.split(' ')[1:])
-        print(f'command: {command}, params: {command_text}')
         if command == '!hello':
             await message.reply(f'Hello, {message.author.name}!')
-        elif command == '!play':
-            await self.play(command_text, message)
-        elif command == '!playnext':
-            await self.add_to_queue(command_text, message)
-        elif command == '!next':
-            await self.next(message)
-
-    async def next(self, message):
-        try:
-            if self.voice_client.is_playing():
-                self.voice_client.stop()
+        elif command == '!connect':
+            if message.author.voice is None:
+                await message.reply(f'You must be connected to use Player of {self.user.name}')
+            elif self.player.voice_client is None:
+                await self.player.connect(message.author.voice.channel)
             else:
-                await message.reply("Nothing is playing, can't execute command !next")
-        except Exception as e:
-            print(e)
-            await message.reply("Nothing is playing, can't execute command !next")
+                await message.reply(f'{self.user.name}'
+                                    f' already connected to '
+                                    f'{self.player.voice_client.channel}'
+                                    f' voice channel')
+        elif command == '!disconnect':
+            if self.player.voice_client is None:
+                await message.reply(f'{self.user.name} is not connected to any channel')
+            elif message.author.voice.channel != self.player.voice_client.channel:
+                await message.reply(f"Yoe can't use Player of {self.user.name}, "
+                                    f"when it connected to other voice channel")
+            else:
+                await self.player.disconnect()
+        elif command == '!tolist':
+            await self.player.add_to_queue(command_text, message)
+        elif command == '!play':
+            await self.player.play(message)
+
+    async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
+        print(user)
+        print(reaction)
+        print(user == self.user)
+        if user == self.user:
+            return
+        if reaction.message == self.player.player_message:
+            if reaction.emoji == '⏪':
+                print('previous')
+                self.player.is_previous = True
+            elif reaction.emoji == '⏸':
+                print('pause')
+                self.player.is_paused = True
+            elif reaction.emoji == '⏩':
+                print('next')
+                self.player.is_next = True
 
 
 if __name__ == '__main__':
-    bot = MyBot(command_prefix=settings['prefix'])
+    bot = MyBot()
     bot.run(settings['token'])
