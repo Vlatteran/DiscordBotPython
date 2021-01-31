@@ -1,30 +1,28 @@
+from discord.ext.commands import Bot
 import discord
-from youtube_dl import YoutubeDL
 from config import settings
-from asyncio import sleep
 from collections import deque
+from youtube_dl import YoutubeDL
+from asyncio import sleep
 
 
-class Bot:
-    def __init__(self):
-        self.bot = discord.Client()
+class MyBot(Bot):
+    def __init__(self, command_prefix, **options):
+        super().__init__(command_prefix, **options)
         self.voice_client = None
         self.music_queue = deque()
 
-    def run(self, token):
-        self.bot.run(token)
-
     async def on_ready(self):
-        print(f'We have logged in as {self.bot.user}')
+        print(f'We have logged in as {self.user}')
 
     async def play(self, music, message):
         ydl_options = {'format': 'bestaudio', 'noplaylist': 'True'}
         ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
                           'options': '-vn'}
         if self.voice_client is None:
-            channel = message.author.voice.channel
+            channel = message.author.voice
             if channel is not None:
-                self.voice_client = await channel.connect(timeout=60, reconnect=True)
+                self.voice_client = await channel.channel.connect(timeout=60, reconnect=True)
             else:
                 await message.reply('You must be connected to voice channel to play music')
         elif self.voice_client.channel != message.author.voice.channel:
@@ -66,7 +64,7 @@ class Bot:
 
     async def on_message(self, message: discord.Message):
         print(f'{message.author} in {message.guild}.{message.channel}: {message.content}')
-        if message.author == self.bot.user:
+        if message.author == self.user:
             return
 
         command = message.content.split(' ')[0]
@@ -93,17 +91,5 @@ class Bot:
 
 
 if __name__ == '__main__':
-    bot = Bot()
-
-
-    @bot.bot.event
-    async def on_ready():
-        await bot.on_ready()
-
-
-    @bot.bot.event
-    async def on_message(message: discord.Message):
-        await bot.on_message(message)
-
-
+    bot = MyBot(command_prefix=settings['prefix'])
     bot.run(settings['token'])
