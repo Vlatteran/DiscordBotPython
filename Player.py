@@ -38,6 +38,7 @@ class Player:
 
     async def play(self, message):
         while self.current <= len(self.music_list) - 1:
+            print(f'[Player.play()] current = {self.current}')
             info = self.music_list[self.current]
             ffmpeg_options = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
                               'options': '-vn'}

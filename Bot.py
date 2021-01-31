@@ -47,10 +47,9 @@ class MyBot(Client):
         elif command == '!showlist':
             amount = len(self.player.music_list) - self.player.current
             amount = 10 if amount > 10 else amount
-            print(f'{self.player.current}, {amount}')
             text = f'First {amount} tracks in list:\n'
             text += '\n'.join([str(num + 1) + ". " + info['title'] for info, num in
-                               zip(self.player.music_list[self.player.current:amount], range(amount))])
+                               zip(self.player.music_list[self.player.current:amount+1], range(amount))])
             await message.reply(text)
 
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
