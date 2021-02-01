@@ -74,7 +74,7 @@ class Player:
                 elif self.is_previous:
                     print('[Player.play()] change to previous track because of button')
                     self.voice_client.stop()
-                    self.is_paused = False
+                    self.is_previous = False
                     self.current -= 1
                     break
                 elif self.is_paused:
