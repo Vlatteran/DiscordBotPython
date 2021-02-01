@@ -22,6 +22,7 @@ class Player:
 
     def __init__(self):
         self.is_paused = False
+        self.is_resumed = False
         self.is_previous = False
         self.is_next = False
         self.music_list = []
@@ -64,7 +65,7 @@ class Player:
             await self.player_message.add_reaction('⏩')
             self.voice_client.play(discord.FFmpegPCMAudio(source=url, **self.ffmpeg_options))
 
-            while self.voice_client.is_playing():
+            while self.voice_client.is_playing() or self.voice_client.is_paused():
                 if self.is_next:
                     print('[Player.play()] change to next track because of button')
                     self.voice_client.stop()
@@ -80,10 +81,31 @@ class Player:
                 elif self.is_paused:
                     print('[Player.play()] paused because of button')
                     self.voice_client.pause()
-                elif not self.voice_client.is_paused():
-                    await sleep(3)
+                    await self.player_message.clear_reactions()
+                    await self.player_message.add_reaction('⏪')
+                    await self.player_message.add_reaction('▶')
+                    await self.player_message.add_reaction('⏩')
+                    self.is_paused = False
+                elif self.is_resumed:
+                    print('[Player.play()] resumed because of button')
+                    self.voice_client.resume()
+                    await self.player_message.clear_reactions()
+                    await self.player_message.add_reaction('⏪')
+                    await self.player_message.add_reaction('⏸')
+                    await self.player_message.add_reaction('⏩')
+                    self.is_resumed = False
+                else:
+                    await sleep(.1)
+                if self.current < 0:
+                    self.current = len(self.music_list) - 1
+                elif self.current > len(self.music_list) - 1:
+                    self.current = 0
             else:
                 self.current += 1
+            if self.current < 0:
+                self.current = len(self.music_list) - 1
+            elif self.current > len(self.music_list) - 1:
+                self.current = 0
         await self.voice_client.disconnect()
         try:
             await self.player_message.unpin()

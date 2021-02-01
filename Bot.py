@@ -63,14 +63,13 @@ class MyBot(Client):
               f' {reaction.message.guild}.{reaction.message.channel}')
         if reaction.message == self.players[reaction.message.guild].player_message:
             if reaction.emoji == '⏪':
-                print('previous')
                 self.players[reaction.message.guild].is_previous = True
             elif reaction.emoji == '⏸':
-                print('pause')
                 self.players[reaction.message.guild].is_paused = True
             elif reaction.emoji == '⏩':
-                print('next')
                 self.players[reaction.message.guild].is_next = True
+            elif reaction.emoji == '▶':
+                self.players[reaction.message.guild].is_resumed = True
 
 
 if __name__ == '__main__':
