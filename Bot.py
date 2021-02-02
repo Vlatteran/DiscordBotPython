@@ -1,7 +1,7 @@
 from discord import Client
-from config import settings
 from Player import Player
 import discord.guild
+import sys
 
 
 class MyBot(Client):
@@ -74,4 +74,9 @@ class MyBot(Client):
 
 if __name__ == '__main__':
     bot = MyBot()
-    bot.run(settings['token'])
+    if len(sys.argv) > 0:
+        token = sys.argv[0]
+    else:
+        from config import settings
+        token = settings['token']
+    bot.run(token)
