@@ -74,9 +74,6 @@ class MyBot(Client):
 
 if __name__ == '__main__':
     bot = MyBot()
-    if len(sys.argv) > 0:
-        token = sys.argv[0]
-    else:
-        from config import settings
-        token = settings['token']
+    from config import settings
+    token = settings['token']
     bot.run(token)
