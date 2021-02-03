@@ -1,6 +1,8 @@
 from discord import Client
 from Player import Player
 import discord.guild
+from config import settings
+from schedule import Schedule
 import sys
 
 
@@ -8,6 +10,7 @@ class MyBot(Client):
     def __init__(self, **options):
         super().__init__(**options)
         self.players = {}
+        self.schedule = Schedule()
 
     async def on_ready(self):
         print(f'[MyBot.on_ready]We have logged in as {self.user}')
@@ -55,6 +58,8 @@ class MyBot(Client):
                                    range(amount)
                                )])
             await message.reply(text)
+        elif command in ('!расписание', '!пары'):
+            await message.reply(self.schedule.show(command_text))
 
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
         if user == self.user:
@@ -74,6 +79,4 @@ class MyBot(Client):
 
 if __name__ == '__main__':
     bot = MyBot()
-    from config import settings
-    token = settings['token']
-    bot.run(token)
+    bot.run(settings['token'])
